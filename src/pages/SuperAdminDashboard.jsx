@@ -141,8 +141,7 @@ export default function SuperAdminDashboard() {
 
 function ClientRow({ client, onSave, onBlock, isMe }) {
   const [selectedType, setSelectedType] = useState(client.business_type || '');
-  const needsConfiguration = !isMe && !client.business_type;
-  const canEditType = !isMe && client.status !== 'blocked' && (client.status === 'pending' || needsConfiguration);
+  const canEditType = !isMe && client.status !== 'blocked';
   const showApproveAction = client.status === 'pending';
   const hasTypeChanged = selectedType && selectedType !== client.business_type;
   const showSaveAction = !showApproveAction && canEditType && hasTypeChanged;
@@ -184,14 +183,7 @@ function ClientRow({ client, onSave, onBlock, isMe }) {
         ) : (
           <select
             value={selectedType}
-            onChange={(e) => {
-              const newType = e.target.value;
-              setSelectedType(newType);
-
-              if (!showApproveAction && canEditType && newType && newType !== client.business_type) {
-                onSave(client.id, newType, client.status);
-              }
-            }}
+            onChange={(e) => setSelectedType(e.target.value)}
             disabled={!canEditType}
             style={{ background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}
           >
@@ -214,8 +206,8 @@ function ClientRow({ client, onSave, onBlock, isMe }) {
           </button>
         )}
         {showSaveAction && (
-          <button onClick={() => onSave(client.id, selectedType, client.status)} style={{ background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '999px', cursor: 'pointer', color: 'var(--color-brand)', marginRight: '0.5rem', fontWeight: '600', padding: '0.45rem 0.9rem' }} title="Salvar categoria">
-            Salvar
+          <button onClick={() => onSave(client.id, selectedType, client.status)} style={{ background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '999px', cursor: 'pointer', color: 'var(--color-brand)', marginRight: '0.5rem', fontWeight: '600', padding: '0.45rem 0.9rem' }} title="Confirmar categoria">
+            Confirmar
           </button>
         )}
         {client.status !== 'blocked' && !isMe && (
