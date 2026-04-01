@@ -7,16 +7,25 @@ export default function SuperAdminDashboard() {
   const { profile, signOut } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const fetchClients = async () => {
-    // Busca todos os perfis registrados no banco
+    setErrorMessage('');
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
-    
-    if (data) setClients(data);
-    if (error) console.error("Erro ao buscar clientes: ", error);
+
+    if (data) {
+      setClients(data);
+    }
+
+    if (error) {
+      console.error('Erro ao buscar clientes:', error);
+      setErrorMessage('O superadmin nao conseguiu listar todos os perfis. Verifique as policies do Supabase.');
+    }
+
     setLoading(false);
   };
 
@@ -24,22 +33,28 @@ export default function SuperAdminDashboard() {
     fetchClients();
   }, []);
 
-  const approveClient = async (id, newBusinessType) => {
-    if(!newBusinessType) {
-      alert("Selecione um tipo de negócio para o cliente primeiro!");
+  const saveClientConfiguration = async (id, newBusinessType, currentStatus) => {
+    if (!newBusinessType) {
+      alert('Selecione um tipo de negocio para o cliente primeiro!');
       return;
     }
 
+    const payload = {
+      business_type: newBusinessType,
+      status: currentStatus === 'pending' ? 'approved' : currentStatus,
+    };
+
     const { error } = await supabase
       .from('profiles')
-      .update({ status: 'approved', business_type: newBusinessType })
+      .update(payload)
       .eq('id', id);
 
     if (error) {
-      alert("Erro ao aprovar cliente: " + error.message);
-    } else {
-      fetchClients();
+      alert('Erro ao salvar configuracao do cliente: ' + error.message);
+      return;
     }
+
+    fetchClients();
   };
 
   const blockClient = async (id) => {
@@ -48,10 +63,17 @@ export default function SuperAdminDashboard() {
       .update({ status: 'blocked' })
       .eq('id', id);
 
-    if (!error) fetchClients();
+    if (error) {
+      alert('Erro ao bloquear cliente: ' + error.message);
+      return;
+    }
+
+    fetchClients();
   };
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Carregando Painel...</div>;
+  if (loading) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Carregando Painel...</div>;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--color-bg-primary)' }}>
@@ -62,7 +84,7 @@ export default function SuperAdminDashboard() {
           </div>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Painel SaaS Super Admin</h2>
-            <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>Gestão de Inscrições do ERP</p>
+            <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>Gestao de inscricoes do ERP</p>
           </div>
         </div>
         <button className="btn-primary" onClick={signOut} style={{ background: 'transparent', border: '1px solid var(--color-border)', padding: '0.5rem 1rem' }}>
@@ -76,29 +98,37 @@ export default function SuperAdminDashboard() {
           <h3 style={{ margin: 0 }}>Empresas Cadastradas ({clients.length})</h3>
         </div>
 
+        {errorMessage && (
+          <div style={{ marginBottom: '1rem', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(245, 158, 11, 0.35)', background: 'rgba(245, 158, 11, 0.08)', color: 'var(--color-warning)' }}>
+            {errorMessage}
+          </div>
+        )}
+
         <div style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'rgba(0,0,0,0.2)', color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>Nome Responsável</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>Tipo (Escolha)</th>
+                <th style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>Nome Responsavel</th>
+                <th style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>Tipo</th>
                 <th style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)' }}>Status</th>
-                <th style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', textAlign: 'center' }}>Ações</th>
+                <th style={{ padding: '1rem', borderBottom: '1px solid var(--color-border)', textAlign: 'center' }}>Acoes</th>
               </tr>
             </thead>
             <tbody>
-              {clients.map(client => (
-                <ClientRow 
-                  key={client.id} 
-                  client={client} 
-                  onApprove={approveClient} 
-                  onBlock={blockClient} 
+              {clients.map((client) => (
+                <ClientRow
+                  key={client.id}
+                  client={client}
+                  onSave={saveClientConfiguration}
+                  onBlock={blockClient}
                   isMe={client.id === profile?.id}
                 />
               ))}
               {clients.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>Nenhum cliente registrado ainda.</td>
+                  <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                    Nenhum cliente registrado ainda.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -109,43 +139,83 @@ export default function SuperAdminDashboard() {
   );
 }
 
-function ClientRow({ client, onApprove, onBlock, isMe }) {
+function ClientRow({ client, onSave, onBlock, isMe }) {
   const [selectedType, setSelectedType] = useState(client.business_type || '');
+  const needsConfiguration = !isMe && !client.business_type;
+  const canEditType = !isMe && client.status !== 'blocked' && (client.status === 'pending' || needsConfiguration);
+  const showApproveAction = client.status === 'pending';
+  const hasTypeChanged = selectedType && selectedType !== client.business_type;
+  const showSaveAction = !showApproveAction && canEditType && hasTypeChanged;
+  const displayType = client.business_type
+    ? client.business_type === 'oficina'
+      ? 'Oficina'
+      : client.business_type === 'restaurante'
+        ? 'Restaurante'
+        : 'Loja / PDV'
+    : client.role === 'superadmin'
+      ? 'Super Admin'
+      : 'Nao definido';
+
+  let statusTone = { background: 'rgba(245, 158, 11, 0.1)', color: 'var(--color-warning)' };
+  let statusLabel = client?.status ? client.status.toUpperCase() : 'DESCONHECIDO';
+
+  if (client.status === 'blocked') {
+    statusTone = { background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-error)' };
+  } else if (!client.business_type) {
+    statusTone = { background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-brand)' };
+    statusLabel = 'SEM CATEGORIA';
+  } else if (client.status === 'approved') {
+    statusTone = { background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)' };
+  }
 
   return (
     <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
       <td style={{ padding: '1rem' }}>
-        {client.full_name} {isMe && <span style={{ fontSize: '0.7em', background: 'var(--color-brand)', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>Você</span>}
+        {client.full_name}{' '}
+        {isMe && (
+          <span style={{ fontSize: '0.7em', background: 'var(--color-brand)', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>
+            Voce
+          </span>
+        )}
       </td>
       <td style={{ padding: '1rem' }}>
-        <select 
-          value={selectedType}
-          onChange={(e) => setSelectedType(e.target.value)}
-          disabled={client.status === 'approved' && !isMe}
-          style={{ background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}
-        >
-          <option value="">-- Selecione --</option>
-          <option value="oficina">Oficina Mecânica</option>
-          <option value="restaurante">Restaurante</option>
-          <option value="loja">Loja / PDV</option>
-        </select>
+        {isMe ? (
+          <span style={{ color: 'var(--color-text-secondary)', fontWeight: '600' }}>{displayType}</span>
+        ) : (
+          <select
+            value={selectedType}
+            onChange={(e) => {
+              const newType = e.target.value;
+              setSelectedType(newType);
+
+              if (!showApproveAction && canEditType && newType && newType !== client.business_type) {
+                onSave(client.id, newType, client.status);
+              }
+            }}
+            disabled={!canEditType}
+            style={{ background: 'var(--color-bg-primary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}
+          >
+            <option value="">-- Selecione --</option>
+            <option value="oficina">Oficina Mecanica</option>
+            <option value="restaurante">Restaurante</option>
+            <option value="loja">Loja / PDV</option>
+          </select>
+        )}
       </td>
       <td style={{ padding: '1rem' }}>
-        <span style={{
-          padding: '4px 8px',
-          borderRadius: '12px',
-          fontSize: '0.8rem',
-          fontWeight: '500',
-          background: client?.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : client?.status === 'pending' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-          color: client?.status === 'approved' ? 'var(--color-success)' : client?.status === 'pending' ? 'var(--color-warning)' : 'var(--color-error)'
-        }}>
-          {client?.status ? client.status.toUpperCase() : 'DESCONHECIDO'}
+        <span style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '500', background: statusTone.background, color: statusTone.color }}>
+          {statusLabel}
         </span>
       </td>
       <td style={{ padding: '1rem', textAlign: 'center' }}>
-        {client.status === 'pending' && (
-          <button onClick={() => onApprove(client.id, selectedType)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', marginRight: '0.5rem' }} title="Aprovar">
+        {showApproveAction && (
+          <button onClick={() => onSave(client.id, selectedType, client.status)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-success)', marginRight: '0.5rem' }} title="Aprovar e configurar">
             <CheckCircle size={20} />
+          </button>
+        )}
+        {showSaveAction && (
+          <button onClick={() => onSave(client.id, selectedType, client.status)} style={{ background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '999px', cursor: 'pointer', color: 'var(--color-brand)', marginRight: '0.5rem', fontWeight: '600', padding: '0.45rem 0.9rem' }} title="Salvar categoria">
+            Salvar
           </button>
         )}
         {client.status !== 'blocked' && !isMe && (
