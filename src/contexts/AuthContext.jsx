@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext();
+const PROFILE_CACHE_KEY = 'erp_profile_cache_v1';
 
 export const useAuth = () => {
   return useContext(AuthContext);
@@ -31,10 +32,31 @@ export const AuthProvider = ({ children }) => {
   const clearSupabaseStorage = () => {
     try {
       localStorage.removeItem('erp_sso_v2');
+      localStorage.removeItem(PROFILE_CACHE_KEY);
       Object.keys(localStorage)
         .filter((key) => key.startsWith('sb-') && key.endsWith('-auth-token'))
         .forEach((key) => localStorage.removeItem(key));
     } catch (e) {
+      // Ignora erros de acesso ao storage
+    }
+  };
+
+  const getCachedProfile = (userId) => {
+    try {
+      const rawProfile = localStorage.getItem(PROFILE_CACHE_KEY);
+      if (!rawProfile) return null;
+
+      const parsedProfile = JSON.parse(rawProfile);
+      return parsedProfile?.id === userId ? parsedProfile : null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const setCachedProfile = (nextProfile) => {
+    try {
+      localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(nextProfile));
+    } catch (error) {
       // Ignora erros de acesso ao storage
     }
   };
@@ -103,13 +125,14 @@ export const AuthProvider = ({ children }) => {
 
       if (data) {
         setProfile(data);
+        setCachedProfile(data);
       } else {
         console.error('Nenhum perfil encontrado para o usuario:', error);
-        setProfile(buildFallbackProfile(user));
+        setProfile((currentProfile) => currentProfile?.id === user.id ? currentProfile : buildFallbackProfile(user));
       }
     } catch (err) {
       console.error('Erro no fetchProfile:', err);
-      setProfile(buildFallbackProfile(user));
+      setProfile((currentProfile) => currentProfile?.id === user.id ? currentProfile : buildFallbackProfile(user));
     } finally {
       setLoading(false);
       setStuck(false);
@@ -149,6 +172,10 @@ export const AuthProvider = ({ children }) => {
         setSession(currentSession);
 
         if (currentSession) {
+          const cachedProfile = getCachedProfile(currentSession.user.id);
+          if (cachedProfile) {
+            setProfile(cachedProfile);
+          }
           await fetchProfile(currentSession.user);
         } else {
           setProfile(null);
@@ -174,6 +201,10 @@ export const AuthProvider = ({ children }) => {
 
       if (nextSession) {
         setLoading(true);
+        const cachedProfile = getCachedProfile(nextSession.user.id);
+        if (cachedProfile) {
+          setProfile(cachedProfile);
+        }
         await fetchProfile(nextSession.user);
       } else {
         setProfile(null);

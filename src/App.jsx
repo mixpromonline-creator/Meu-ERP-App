@@ -15,7 +15,19 @@ import ClientDashboard from './pages/ClientDashboard'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 
 const DashboardRouter = () => {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
+
+  if (loading || !profile) {
+    return (
+      <div className="app-loader-screen">
+        <div className="app-loader-card">
+          <div className="app-loader-spinner" />
+          <p className="app-loader-title">Abrindo seu painel...</p>
+          <p className="app-loader-subtitle">Escolhendo a area correta da sua conta.</p>
+        </div>
+      </div>
+    );
+  }
   
   if (profile?.role === 'superadmin') {
     return <SuperAdminDashboard />;
