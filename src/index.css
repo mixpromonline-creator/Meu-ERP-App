@@ -133,3 +133,79 @@ a:hover {
 button {
   font-family: inherit;
 }
+
+.app-loader-screen {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.08), transparent 26%),
+    var(--color-bg-primary);
+}
+
+.app-loader-card {
+  width: min(100%, 420px);
+  min-height: 260px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: rgba(18, 18, 20, 0.88);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.app-loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-brand);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.app-loader-title {
+  margin-bottom: 0.35rem;
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.app-loader-subtitle {
+  margin-bottom: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.app-loader-warning {
+  margin-top: 1.5rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+@media (max-width: 640px) {
+  .app-loader-screen {
+    padding: 16px;
+  }
+
+  .app-loader-card {
+    min-height: 220px;
+    padding: 28px 18px;
+  }
+
+  .app-loader-title {
+    font-size: 1rem;
+  }
+
+  .app-loader-subtitle {
+    font-size: 0.9rem;
+  }
+}

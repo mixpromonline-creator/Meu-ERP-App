@@ -126,10 +126,10 @@ export const AuthProvider = ({ children }) => {
     }, 12000);
 
     const stuckTimeout = setTimeout(() => {
-      if (mounted) {
+      if (mounted && loading) {
         setStuck(true);
       }
-    }, 7000);
+    }, 18000);
 
     const bootstrap = async () => {
       try {
@@ -202,11 +202,13 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={value}>
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--color-bg-primary)', color: 'var(--color-text-secondary)' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-brand)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1rem' }} />
-          Carregando Aplicacao...
+        <div className="app-loader-screen">
+          <div className="app-loader-card">
+            <div className="app-loader-spinner" />
+            <p className="app-loader-title">Carregando aplicacao...</p>
+            <p className="app-loader-subtitle">Restaurando sua sessao com seguranca.</p>
           {stuck && (
-            <div style={{ marginTop: '1.5rem', textAlign: 'center', maxWidth: '360px' }}>
+            <div className="app-loader-warning">
               <p style={{ marginBottom: '1rem', color: 'var(--color-warning)' }}>
                 A sessao demorou para responder. Se quiser, voce pode resetar e entrar novamente.
               </p>
@@ -226,6 +228,7 @@ export const AuthProvider = ({ children }) => {
               </button>
             </div>
           )}
+          </div>
           <style>
             {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
           </style>
