@@ -75,6 +75,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
     
+    // Obter sessão inicial de forma segura
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) {
         setSession(session);
@@ -86,21 +87,27 @@ export const AuthProvider = ({ children }) => {
       }
     });
 
+    // Escutar mudanças de estado (login, logout, refresh), ignorando a primeira chamada simultanea
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        if (session) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
+      async (event, session) => {
+        // Ignora a chamada inicial para não brigar pela trava (Lock) com o getSession()
+        if (event === 'INITIAL_SESSION') return;
+        
+        if (mounted) {
+          setSession(session);
+          if (session) {
+            await fetchProfile(session.user.id);
+          } else {
+            setProfile(null);
+            setLoading(false);
+          }
         }
       }
     );
 
     return () => {
       mounted = false;
-      if(authListener?.subscription) {
+      if (authListener?.subscription) {
         authListener.subscription.unsubscribe();
       }
     };
