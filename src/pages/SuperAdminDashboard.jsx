@@ -136,10 +136,10 @@ function ClientRow({ client, onApprove, onBlock, isMe }) {
           borderRadius: '12px',
           fontSize: '0.8rem',
           fontWeight: '500',
-          background: client.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : client.status === 'pending' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-          color: client.status === 'approved' ? 'var(--color-success)' : client.status === 'pending' ? 'var(--color-warning)' : 'var(--color-error)'
+          background: client?.status === 'approved' ? 'rgba(16, 185, 129, 0.1)' : client?.status === 'pending' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          color: client?.status === 'approved' ? 'var(--color-success)' : client?.status === 'pending' ? 'var(--color-warning)' : 'var(--color-error)'
         }}>
-          {client.status.toUpperCase()}
+          {client?.status ? client.status.toUpperCase() : 'DESCONHECIDO'}
         </span>
       </td>
       <td style={{ padding: '1rem', textAlign: 'center' }}>
