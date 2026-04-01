@@ -93,7 +93,7 @@ export default function SuperAdminDashboard() {
                   client={client} 
                   onApprove={approveClient} 
                   onBlock={blockClient} 
-                  isMe={client.id === profile.id}
+                  isMe={client.id === profile?.id}
                 />
               ))}
               {clients.length === 0 && (

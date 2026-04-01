@@ -8,6 +8,7 @@ import './index.css'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import PendingApproval from './pages/PendingApproval'
+import Blocked from './pages/Blocked'
 
 // Dashboards
 import ClientDashboard from './pages/ClientDashboard'
@@ -70,6 +71,11 @@ function App() {
                 {/* Rota para contas que aguardam aprovação */}
                 <Route element={<ProtectedRoute allowedStatus={['pending']} />}>
                   <Route path="/pending" element={<PendingApproval />} />
+                </Route>
+                
+                {/* Rota para contas bloqueadas */}
+                <Route element={<ProtectedRoute allowedStatus={['approved', 'pending', 'blocked']} />}>
+                  <Route path="/blocked" element={<Blocked />} />
                 </Route>
 
                 {/* Rotas Privadas (Somente Contas Aprovadas e Super Admins) */}

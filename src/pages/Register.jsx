@@ -27,7 +27,11 @@ export default function Register() {
       
       navigate('/pending'); // Redireciona logo após o cadastro para a tela de conta pendente
     } catch (err) {
-      setError(err.message || 'Falha ao criar conta. Tente novamente.');
+      if (err?.message?.includes('TIMEOUT')) {
+        setError('O cadastro demorou demais e foi cancelado. Tente novamente.');
+      } else {
+        setError(err.message || 'Falha ao criar conta. Tente novamente.');
+      }
       console.error(err);
     } finally {
       setLoading(false);

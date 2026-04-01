@@ -27,7 +27,11 @@ export default function Login() {
       // Se não der erro, o roteamento global será trigado pelo AuthContext
       navigate('/');
     } catch (err) {
-      setError('Falha ao entrar. Verifique suas credenciais.');
+      if (err?.message?.includes('TIMEOUT')) {
+        setError('O login demorou demais e foi cancelado. Tente novamente.');
+      } else {
+        setError('Falha ao entrar. Verifique suas credenciais.');
+      }
       console.error(err);
     } finally {
       setLoading(false);
