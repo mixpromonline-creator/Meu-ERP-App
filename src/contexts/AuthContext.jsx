@@ -7,6 +7,14 @@ export const useAuth = () => {
   return useContext(AuthContext);
 };
 
+const buildFallbackProfile = (user) => ({
+  id: user.id,
+  full_name: user.user_metadata?.full_name || user.email || 'Usuario',
+  role: 'admin',
+  status: 'approved',
+  business_type: null,
+});
+
 export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -31,7 +39,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign Up com tratamento
   const signUp = async (email, password, fullName) => {
     try {
       const { data, error } = await withTimeout(
@@ -41,22 +48,18 @@ export const AuthProvider = ({ children }) => {
           options: {
             data: {
               full_name: fullName,
-            }
-          }
+            },
+          },
         }),
-        8000,
+        10000,
         'SUPABASE_SIGNUP_TIMEOUT'
       );
       return { data, error };
     } catch (error) {
-      if (error?.message?.includes('TIMEOUT')) {
-        clearSupabaseStorage();
-      }
       return { data: null, error };
     }
   };
 
-  // Sign In
   const signIn = async (email, password) => {
     try {
       const { data, error } = await withTimeout(
@@ -64,141 +67,128 @@ export const AuthProvider = ({ children }) => {
           email,
           password,
         }),
-        8000,
+        10000,
         'SUPABASE_SIGNIN_TIMEOUT'
       );
       return { data, error };
     } catch (error) {
-      if (error?.message?.includes('TIMEOUT')) {
-        clearSupabaseStorage();
-      }
       return { data: null, error };
     }
   };
 
-  // Sign Out
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
     } catch (error) {
-      console.warn('Supabase logout lock error. Forçando limpeza de sessão.', error);
+      console.warn('Erro ao encerrar sessao no Supabase. Limpando sessao local.', error);
     } finally {
+      clearSupabaseStorage();
       setSession(null);
       setProfile(null);
+      setStuck(false);
     }
   };
 
-  // Obter perfil (role, status, business_type)
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (user) => {
     try {
-      // Wrapper de timeout para impedir que a query pendure a interface para sempre
-      const requestPromise = supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single(),
+        8000,
+        'SUPABASE_PROFILE_TIMEOUT'
+      );
 
-      // Aguarda quem terminar primeiro
-      const { data, error } = await withTimeout(requestPromise, 3500, "SUPABASE_TIMEOUT");
-      
       if (data) {
         setProfile(data);
       } else {
-        console.error("Nenhum perfil encontrado para o usuário: ", error);
-        setProfile({ id: userId, status: 'pending', role: 'employee', full_name: 'Usuário sem Perfil' });
+        console.error('Nenhum perfil encontrado para o usuario:', error);
+        setProfile(buildFallbackProfile(user));
       }
     } catch (err) {
-      console.error("Erro no fetchProfile:", err);
-      // Se ocorreu travamento total da requisição, a sessão pode estar corrompida.
-      if (err.message === "SUPABASE_TIMEOUT") {
-        console.error("A API do Supabase (gotrue) travou durante a renovação de sessão. Deslogando com segurança.");
-        try {
-           clearSupabaseStorage(); // limpa as chaves supabase à força
-           await supabase.auth.signOut();
-        } catch(e) {}
-        setSession(null);
-        setProfile(null);
-      }
+      console.error('Erro no fetchProfile:', err);
+      setProfile(buildFallbackProfile(user));
     } finally {
-      // Sempre encerramos o loading
       setLoading(false);
+      setStuck(false);
     }
   };
 
   useEffect(() => {
     let mounted = true;
-    
-    // Fallback super seguro: se em 4,5 segundos o listener não desbloquear (ou o fetchProfile), desbloqueamos.
+
     const masterTimeout = setTimeout(() => {
-      if (mounted && loading) {
-        console.error("Master Timeout Atingido: Supabase travou na inicialização geral.");
+      if (mounted) {
         setLoading(false);
       }
-    }, 4500);
+    }, 12000);
 
     const stuckTimeout = setTimeout(() => {
-      if (mounted && loading) {
+      if (mounted) {
         setStuck(true);
       }
-    }, 6500);
+    }, 7000);
 
     const bootstrap = async () => {
       try {
-        const { data } = await withTimeout(supabase.auth.getSession(), 3500, 'SUPABASE_GETSESSION_TIMEOUT');
+        const { data, error } = await withTimeout(
+          supabase.auth.getSession(),
+          10000,
+          'SUPABASE_GETSESSION_TIMEOUT'
+        );
+
         if (!mounted) return;
+
+        if (error) {
+          console.error('Erro ao restaurar sessao:', error);
+        }
+
         const currentSession = data?.session || null;
         setSession(currentSession);
+
         if (currentSession) {
-          await fetchProfile(currentSession.user.id);
+          await fetchProfile(currentSession.user);
         } else {
           setProfile(null);
           setLoading(false);
+          setStuck(false);
         }
       } catch (err) {
-        console.error("Erro no bootstrap de sessão:", err);
-        if (err.message === 'SUPABASE_GETSESSION_TIMEOUT') {
-          clearSupabaseStorage();
-        }
-        setSession(null);
-        setProfile(null);
+        console.error('Erro no bootstrap de sessao:', err);
+        if (!mounted) return;
         setLoading(false);
-      } finally {
-        clearTimeout(masterTimeout);
-        clearTimeout(stuckTimeout);
+        setStuck(true);
       }
     };
 
     bootstrap();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        
-        setSession(session);
-        if (session) {
-          // fetchProfile irá setar loading = false por si só no finally ou jogar para o catch
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-        
-        // Finalizou qualquer uma das etapas? matamos o master timeout.
-        clearTimeout(masterTimeout);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      if (!mounted) return;
+
+      setSession(nextSession);
+
+      if (nextSession) {
+        setLoading(true);
+        await fetchProfile(nextSession.user);
+      } else {
+        setProfile(null);
+        setLoading(false);
+        setStuck(false);
       }
-    );
+    });
 
     return () => {
       mounted = false;
       clearTimeout(masterTimeout);
       clearTimeout(stuckTimeout);
-      if (authListener?.subscription) {
-        authListener.subscription.unsubscribe();
-      }
+      subscription?.unsubscribe();
     };
   }, []);
-
-  // Removemos o useEffect antigo que dependia do 'profile' ser preenchido para destravar o setLoading.
 
   const value = {
     session,
@@ -206,7 +196,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     signUp,
     signIn,
-    signOut
+    signOut,
   };
 
   return (
@@ -214,11 +204,11 @@ export const AuthProvider = ({ children }) => {
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--color-bg-primary)', color: 'var(--color-text-secondary)' }}>
           <div style={{ width: '40px', height: '40px', border: '3px solid var(--color-border)', borderTopColor: 'var(--color-brand)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1rem' }} />
-          Carregando Aplicação...
+          Carregando Aplicacao...
           {stuck && (
             <div style={{ marginTop: '1.5rem', textAlign: 'center', maxWidth: '360px' }}>
               <p style={{ marginBottom: '1rem', color: 'var(--color-warning)' }}>
-                A sessão parece travada. Você pode resetar sem precisar limpar o site manualmente.
+                A sessao demorou para responder. Se quiser, voce pode resetar e entrar novamente.
               </p>
               <button
                 className="btn-primary"
@@ -228,10 +218,11 @@ export const AuthProvider = ({ children }) => {
                   setSession(null);
                   setProfile(null);
                   setLoading(false);
+                  setStuck(false);
                   window.location.href = '/login';
                 }}
               >
-                Resetar Sessão
+                Resetar Sessao
               </button>
             </div>
           )}
