@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Menu, ShoppingBag, Users, Utensils, Wrench, X } from 'lucide-react';
 import CustomersModule from '../components/CustomersModule';
+import VehiclesModule from '../components/VehiclesModule';
 
 const businessConfig = {
   oficina: {
     icon: Wrench,
     color: 'var(--color-brand)',
-    modules: ['Clientes', 'Ordens de Servico', 'Pecas e Estoque', 'Mao de Obra'],
+    modules: ['Clientes', 'Veiculos', 'Ordens de Servico', 'Pecas e Estoque', 'Mao de Obra'],
   },
   restaurante: {
     icon: Utensils,
@@ -43,6 +44,10 @@ export default function ClientDashboard() {
   const renderModuleContent = () => {
     if (activeModule === 'Clientes') {
       return <CustomersModule profile={profile} />;
+    }
+
+    if (activeModule === 'Veiculos') {
+      return <VehiclesModule profile={profile} />;
     }
 
     return (
