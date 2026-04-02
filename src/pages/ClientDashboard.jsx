@@ -1,68 +1,149 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Wrench, Utensils, ShoppingBag } from 'lucide-react';
+import { LogOut, Menu, ShoppingBag, Users, Utensils, Wrench, X } from 'lucide-react';
+import CustomersModule from '../components/CustomersModule';
+
+const businessConfig = {
+  oficina: {
+    icon: Wrench,
+    color: 'var(--color-brand)',
+    modules: ['Clientes', 'Ordens de Servico', 'Pecas e Estoque', 'Mao de Obra'],
+  },
+  restaurante: {
+    icon: Utensils,
+    color: 'var(--color-warning)',
+    modules: ['Clientes', 'Gestao de Mesas', 'Cardapio Digital', 'Pedidos'],
+  },
+  loja: {
+    icon: ShoppingBag,
+    color: 'var(--color-success)',
+    modules: ['Clientes', 'Produtos e Estoque', 'Frente de Caixa', 'Vendas'],
+  },
+};
 
 export default function ClientDashboard() {
   const { profile, signOut } = useAuth();
-  const type = profile?.business_type;
+  const [activeModule, setActiveModule] = useState('Clientes');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const getBusinessIcon = () => {
-    switch (type) {
-      case 'oficina': return <Wrench size={48} color="var(--color-brand)" />;
-      case 'restaurante': return <Utensils size={48} color="var(--color-warning)" />;
-      case 'loja': return <ShoppingBag size={48} color="var(--color-success)" />;
-      default: return null;
-    }
+  const config = businessConfig[profile?.business_type] || {
+    icon: Users,
+    color: 'var(--color-brand)',
+    modules: ['Clientes'],
   };
 
-  const getBusinessModules = () => {
-    switch (type) {
-      case 'oficina': return ['Ordens de Serviço', 'Clientes', 'Peças e Estoque', 'Mão de Obra'];
-      case 'restaurante': return ['Gestão de Mesas', 'Cardápio Digital', 'Pedidos', 'Cozinha'];
-      case 'loja': return ['Frente de Caixa (PDV)', 'Produtos e Estoque', 'Gestão de Vendas'];
-      default: return [];
+  const BusinessIcon = config.icon;
+
+  useEffect(() => {
+    if (!config.modules.includes(activeModule)) {
+      setActiveModule(config.modules[0]);
     }
+  }, [activeModule, config.modules]);
+
+  const renderModuleContent = () => {
+    if (activeModule === 'Clientes') {
+      return <CustomersModule profile={profile} />;
+    }
+
+    return (
+      <section className="glass-panel" style={{ padding: '1.75rem' }}>
+        <h2 style={{ marginBottom: '0.5rem' }}>{activeModule}</h2>
+        <p style={{ marginBottom: 0 }}>
+          Este modulo sera o proximo da fila. Ja deixei a estrutura do painel pronta para encaixarmos as proximas etapas do ERP.
+        </p>
+      </section>
+    );
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
-      {/* Sidebar Simples */}
-      <aside style={{ width: '260px', borderRight: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ fontSize: '1.2rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {getBusinessIcon() && React.cloneElement(getBusinessIcon(), { size: 24 })}
-          Meu ERP
-        </h2>
+    <div className="erp-dashboard-shell">
+      <aside className={`erp-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.15rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <BusinessIcon size={22} color={config.color} />
+            Meu ERP
+          </h2>
+          <button type="button" className="erp-mobile-toggle" onClick={() => setSidebarOpen(false)}>
+            <X size={18} />
+          </button>
+        </div>
 
-        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {getBusinessModules().map(mod => (
-            <div key={mod} style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-tertiary)', cursor: 'pointer', border: '1px solid transparent', transition: 'border 0.2s' }}>
-              {mod}
-            </div>
-          ))}
+        <div style={{ padding: '0.9rem 1rem', borderRadius: 'var(--radius-lg)', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--color-border)', marginBottom: '1.25rem' }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginBottom: '0.3rem' }}>Conta ativa</div>
+          <div style={{ fontWeight: 700 }}>{profile?.full_name}</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
+            {profile?.business_type ? profile.business_type.toUpperCase() : 'SEM CATEGORIA'}
+          </div>
+        </div>
+
+        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+          {config.modules.map((module) => {
+            const isActive = module === activeModule;
+
+            return (
+              <button
+                key={module}
+                type="button"
+                onClick={() => {
+                  setActiveModule(module);
+                  setSidebarOpen(false);
+                }}
+                style={{
+                  padding: '0.9rem 1rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: isActive ? 'rgba(59, 130, 246, 0.12)' : 'transparent',
+                  border: `1px solid ${isActive ? 'rgba(59, 130, 246, 0.35)' : 'transparent'}`,
+                  color: isActive ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontWeight: isActive ? 600 : 500,
+                }}
+              >
+                {module}
+              </button>
+            );
+          })}
         </nav>
 
-        <button onClick={signOut} className="btn-primary" style={{ background: 'transparent', border: '1px solid var(--color-border)', marginTop: '2rem', margin: '0 auto', width: '100%' }}>
+        <button onClick={signOut} className="btn-primary" style={{ background: 'transparent', border: '1px solid var(--color-border)', width: '100%', marginTop: '1.5rem' }}>
           <LogOut size={16} /> Sair
         </button>
       </aside>
 
-      {/* Área Principal */}
-      <main style={{ flex: 1, padding: '3rem 4rem' }}>
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h1 style={{ fontSize: '2rem' }}>Olá, {profile?.full_name}</h1>
-          <p>Visão geral do sistema ({type?.toUpperCase()})</p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-          {getBusinessModules().map(mod => (
-            <div key={mod} className="glass-panel" style={{ padding: '2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', marginBottom: '1rem' }}>
-                {getBusinessIcon()}
-              </div>
-              <h3 style={{ fontSize: '1.1rem', margin: 0 }}>{mod}</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-success)', marginTop: '0.5rem' }}>Módulo Ativo</p>
+      <main style={{ minWidth: 0 }}>
+        <header style={{ padding: '1rem 1rem 0 1rem' }}>
+          <div className="glass-panel" style={{ padding: '1.1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginBottom: '0.3rem' }}>Painel da empresa</div>
+              <h1 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: '0.35rem' }}>Ola, {profile?.full_name}</h1>
+              <p style={{ marginBottom: 0 }}>Modulo atual: {activeModule}</p>
             </div>
-          ))}
+            <button type="button" className="erp-mobile-toggle erp-mobile-toggle-visible" onClick={() => setSidebarOpen(true)}>
+              <Menu size={18} />
+              Menu
+            </button>
+          </div>
+        </header>
+
+        <div style={{ padding: '1rem', display: 'grid', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+            {config.modules.map((module) => (
+              <div
+                key={module}
+                className="glass-panel"
+                style={{
+                  padding: '1rem 1.1rem',
+                  border: module === activeModule ? '1px solid rgba(59, 130, 246, 0.35)' : '1px solid var(--color-border)',
+                  background: module === activeModule ? 'rgba(59, 130, 246, 0.08)' : undefined,
+                }}
+              >
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', marginBottom: '0.25rem' }}>Modulo</div>
+                <div style={{ fontWeight: 700 }}>{module}</div>
+              </div>
+            ))}
+          </div>
+
+          {renderModuleContent()}
         </div>
       </main>
     </div>
