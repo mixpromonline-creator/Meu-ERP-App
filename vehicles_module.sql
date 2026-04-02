@@ -95,19 +95,26 @@ values
     ('Audi', 1),
     ('BMW', 2),
     ('Chevrolet', 3),
+    ('BYD', 4),
     ('Citroen', 4),
-    ('Fiat', 5),
-    ('Ford', 6),
-    ('Honda', 7),
-    ('Hyundai', 8),
-    ('Jeep', 9),
-    ('Mercedes-Benz', 10),
-    ('Mitsubishi', 11),
-    ('Nissan', 12),
-    ('Peugeot', 13),
-    ('Renault', 14),
-    ('Toyota', 15),
-    ('Volkswagen', 16)
+    ('CAOA Chery', 5),
+    ('Fiat', 6),
+    ('Ford', 7),
+    ('GAC', 8),
+    ('GWM', 9),
+    ('Honda', 10),
+    ('Hyundai', 11),
+    ('JAC Motors', 12),
+    ('Jeep', 13),
+    ('Kia', 14),
+    ('Mercedes-Benz', 15),
+    ('Mitsubishi', 16),
+    ('Nissan', 17),
+    ('Omoda Jaecoo', 18),
+    ('Peugeot', 19),
+    ('Renault', 20),
+    ('Toyota', 21),
+    ('Volkswagen', 22)
 on conflict (name) do update
 set sort_order = excluded.sort_order;
 
@@ -149,6 +156,17 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
+        ('Dolphin Mini', 1), ('Dolphin', 2), ('King', 3), ('Song Pro', 4), ('Song Plus', 5), ('Yuan Pro', 6), ('Yuan Plus', 7), ('Seal', 8)
+) as models(model_name, sort_order)
+where vb.name = 'BYD'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
         ('C3', 1), ('Aircross', 2), ('C4 Cactus', 3), ('C4 Lounge', 4), ('Jumpy', 5)
 ) as models(model_name, sort_order)
 where vb.name = 'Citroen'
@@ -160,7 +178,18 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('Mobi', 1), ('Uno', 2), ('Argo', 3), ('Cronos', 4), ('Pulse', 5), ('Fastback', 6), ('Toro', 7), ('Strada', 8), ('Fiorino', 9), ('Ducato', 10)
+        ('Tiggo 2', 1), ('Tiggo 3X', 2), ('Tiggo 5X', 3), ('Tiggo 7', 4), ('Tiggo 8', 5), ('Arrizo 5', 6), ('Arrizo 6', 7), ('QQ', 8)
+) as models(model_name, sort_order)
+where vb.name = 'CAOA Chery'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
+        ('Mobi', 1), ('Uno', 2), ('Palio', 3), ('Siena', 4), ('Grand Siena', 5), ('Idea', 6), ('Punto', 7), ('Argo', 8), ('Cronos', 9), ('Pulse', 10), ('Fastback', 11), ('Toro', 12), ('Strada', 13), ('Fiorino', 14), ('Ducato', 15)
 ) as models(model_name, sort_order)
 where vb.name = 'Fiat'
 on conflict (brand_id, name) do update
@@ -171,7 +200,7 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('Ka', 1), ('Fiesta', 2), ('Focus', 3), ('EcoSport', 4), ('Ranger', 5), ('Territory', 6)
+        ('Ka', 1), ('Fiesta', 2), ('Focus', 3), ('Fusion', 4), ('EcoSport', 5), ('Edge', 6), ('Ranger', 7), ('Territory', 8)
 ) as models(model_name, sort_order)
 where vb.name = 'Ford'
 on conflict (brand_id, name) do update
@@ -182,7 +211,29 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('Fit', 1), ('City', 2), ('Civic', 3), ('HR-V', 4), ('WR-V', 5), ('CR-V', 6)
+        ('Aion Y', 1), ('Aion ES', 2), ('GS3', 3), ('Aion V', 4)
+) as models(model_name, sort_order)
+where vb.name = 'GAC'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
+        ('Haval H6', 1), ('Ora 03', 2), ('Poer', 3), ('Tank 300', 4)
+) as models(model_name, sort_order)
+where vb.name = 'GWM'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
+        ('Fit', 1), ('City', 2), ('Civic', 3), ('Accord', 4), ('HR-V', 5), ('WR-V', 6), ('CR-V', 7)
 ) as models(model_name, sort_order)
 where vb.name = 'Honda'
 on conflict (brand_id, name) do update
@@ -193,9 +244,20 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('HB20', 1), ('HB20S', 2), ('Creta', 3), ('Tucson', 4), ('ix35', 5), ('Santa Fe', 6)
+        ('HB20', 1), ('HB20S', 2), ('Azera', 3), ('Creta', 4), ('Tucson', 5), ('ix35', 6), ('Santa Fe', 7), ('Kona', 8)
 ) as models(model_name, sort_order)
 where vb.name = 'Hyundai'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
+        ('E-JS1', 1), ('E-J7', 2), ('T40', 3), ('T50', 4), ('T60', 5), ('Hunter', 6)
+) as models(model_name, sort_order)
+where vb.name = 'JAC Motors'
 on conflict (brand_id, name) do update
 set sort_order = excluded.sort_order;
 
@@ -207,6 +269,17 @@ cross join lateral (
         ('Renegade', 1), ('Compass', 2), ('Commander', 3), ('Gladiator', 4), ('Wrangler', 5)
 ) as models(model_name, sort_order)
 where vb.name = 'Jeep'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
+        ('Picanto', 1), ('Cerato', 2), ('Soul', 3), ('Sportage', 4), ('Sorento', 5), ('Carnival', 6), ('Niro', 7), ('Bongo', 8), ('Stonic', 9)
+) as models(model_name, sort_order)
+where vb.name = 'Kia'
 on conflict (brand_id, name) do update
 set sort_order = excluded.sort_order;
 
@@ -237,7 +310,7 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('March', 1), ('Versa', 2), ('Sentra', 3), ('Kicks', 4), ('Frontier', 5)
+        ('March', 1), ('Versa', 2), ('Sentra', 3), ('Kicks', 4), ('X-Trail', 5), ('Frontier', 6)
 ) as models(model_name, sort_order)
 where vb.name = 'Nissan'
 on conflict (brand_id, name) do update
@@ -248,7 +321,18 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('208', 1), ('2008', 2), ('3008', 3), ('Partner', 4), ('Boxer', 5)
+        ('Omoda E5', 1), ('Jaecoo 7', 2)
+) as models(model_name, sort_order)
+where vb.name = 'Omoda Jaecoo'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
+        ('206', 1), ('207', 2), ('208', 3), ('307', 4), ('308', 5), ('2008', 6), ('3008', 7), ('Partner', 8), ('Boxer', 9)
 ) as models(model_name, sort_order)
 where vb.name = 'Peugeot'
 on conflict (brand_id, name) do update
@@ -259,7 +343,7 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('Kwid', 1), ('Sandero', 2), ('Logan', 3), ('Duster', 4), ('Oroch', 5), ('Master', 6)
+        ('Clio', 1), ('Kwid', 2), ('Sandero', 3), ('Logan', 4), ('Symbol', 5), ('Duster', 6), ('Oroch', 7), ('Fluence', 8), ('Master', 9)
 ) as models(model_name, sort_order)
 where vb.name = 'Renault'
 on conflict (brand_id, name) do update
@@ -270,7 +354,7 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('Etios', 1), ('Yaris', 2), ('Corolla', 3), ('Corolla Cross', 4), ('Hilux', 5), ('SW4', 6)
+        ('Etios', 1), ('Yaris', 2), ('Corolla', 3), ('Corolla Cross', 4), ('Hilux', 5), ('SW4', 6), ('RAV4', 7)
 ) as models(model_name, sort_order)
 where vb.name = 'Toyota'
 on conflict (brand_id, name) do update
@@ -281,9 +365,20 @@ select vb.id, models.model_name, models.sort_order
 from public.vehicle_brands vb
 cross join lateral (
     values
-        ('Gol', 1), ('Polo', 2), ('Virtus', 3), ('Saveiro', 4), ('Nivus', 5), ('T-Cross', 6), ('Taos', 7), ('Amarok', 8)
+        ('Gol', 1), ('Fox', 2), ('Voyage', 3), ('Polo', 4), ('Virtus', 5), ('Saveiro', 6), ('Nivus', 7), ('T-Cross', 8), ('Taos', 9), ('Amarok', 10), ('Jetta', 11)
 ) as models(model_name, sort_order)
 where vb.name = 'Volkswagen'
+on conflict (brand_id, name) do update
+set sort_order = excluded.sort_order;
+
+insert into public.vehicle_models (brand_id, name, sort_order)
+select vb.id, models.model_name, models.sort_order
+from public.vehicle_brands vb
+cross join lateral (
+    values
+        ('Celta', 1), ('Corsa', 2), ('Classic', 3), ('Prisma', 4), ('Cruze', 5), ('Astra', 6), ('Vectra', 7), ('Zafira', 8), ('Onix', 9), ('Tracker', 10), ('S10', 11), ('Montana', 12), ('Spin', 13)
+) as models(model_name, sort_order)
+where vb.name = 'Chevrolet'
 on conflict (brand_id, name) do update
 set sort_order = excluded.sort_order;
 
