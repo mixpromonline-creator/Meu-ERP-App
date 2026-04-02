@@ -234,7 +234,6 @@ export default function VehiclesModule({ profile }) {
               selectedId={formData.customer_id}
               onSelect={(option) => {
                 handleChange('customer_id', option?.id || '');
-                setCustomerSearch(option?.name || '');
               }}
               placeholder="Digite para buscar o cliente"
               emptyText="Nenhum cliente encontrado"
@@ -254,7 +253,6 @@ export default function VehiclesModule({ profile }) {
               onSelect={(option) => {
                 handleChange('brand', option?.id || '');
                 handleChange('model', '');
-                setBrandSearch(option?.name || '');
                 setModelSearch('');
               }}
               placeholder="Digite para buscar a marca"
@@ -270,7 +268,6 @@ export default function VehiclesModule({ profile }) {
               selectedId={formData.model}
               onSelect={(option) => {
                 handleChange('model', option?.id || '');
-                setModelSearch(option?.name || '');
               }}
               placeholder={formData.brand ? 'Digite para buscar o modelo' : 'Escolha a marca primeiro'}
               emptyText="Nenhum modelo encontrado"
@@ -452,8 +449,6 @@ function SearchableSelect({
         if (exactMatch) {
           onSelect(exactMatch);
           onValueChange(exactMatch.name);
-        } else {
-          onSelect(null);
         }
       }
     };
@@ -472,12 +467,14 @@ function SearchableSelect({
           setIsOpen(true);
 
           const matchedOption = options.find((option) => option.name.toLowerCase() === nextValue.trim().toLowerCase());
-          onSelect(matchedOption || null);
+          if (matchedOption) {
+            onSelect(matchedOption);
+          } else if (selectedId) {
+            onSelect(null);
+          }
         }}
         onFocus={() => {
-          if (value.trim()) {
-            setIsOpen(true);
-          }
+          setIsOpen(true);
         }}
         placeholder={placeholder}
         className="erp-input"
