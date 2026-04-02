@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext();
@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stuck, setStuck] = useState(false);
+  const profileRef = useRef(null);
 
   const withTimeout = (promise, ms, label) => {
     const timeout = new Promise((_, reject) =>
@@ -60,6 +61,10 @@ export const AuthProvider = ({ children }) => {
       // Ignora erros de acesso ao storage
     }
   };
+
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
 
   const signUp = async (email, password, fullName) => {
     try {
@@ -139,6 +144,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const shouldRefreshProfile = (nextSession, currentProfile) => {
+    if (!nextSession?.user) return false;
+    if (!currentProfile) return true;
+    return currentProfile.id !== nextSession.user.id;
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -194,18 +205,23 @@ export const AuthProvider = ({ children }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (!mounted) return;
 
       setSession(nextSession);
 
       if (nextSession) {
-        setLoading(true);
         const cachedProfile = getCachedProfile(nextSession.user.id);
+        const needsProfileRefresh = shouldRefreshProfile(nextSession, profileRef.current);
         if (cachedProfile) {
           setProfile(cachedProfile);
         }
-        await fetchProfile(nextSession.user);
+
+        const isInitialLoginEvent = event === 'SIGNED_IN' || event === 'USER_UPDATED';
+        if (needsProfileRefresh || (!cachedProfile && isInitialLoginEvent)) {
+          setLoading(true);
+          await fetchProfile(nextSession.user);
+        }
       } else {
         setProfile(null);
         setLoading(false);
