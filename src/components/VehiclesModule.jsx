@@ -20,6 +20,9 @@ export default function VehiclesModule({ profile }) {
   const [customers, setCustomers] = useState([]);
   const [brands, setBrands] = useState([]);
   const [models, setModels] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [brandSearch, setBrandSearch] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -91,12 +94,18 @@ export default function VehiclesModule({ profile }) {
     }));
   };
 
+  const filteredCustomers = customers.filter((item) => matchesSearch(item.name, customerSearch));
+  const filteredBrands = brands.filter((item) => matchesSearch(item.name, brandSearch));
   const availableModels = models.filter((item) => item.brand_id === formData.brand);
+  const filteredModels = availableModels.filter((item) => matchesSearch(item.name, modelSearch));
   const selectedBrand = brands.find((item) => item.id === formData.brand);
   const selectedModel = availableModels.find((item) => item.id === formData.model);
 
   const resetForm = () => {
     setFormData(emptyForm);
+    setCustomerSearch('');
+    setBrandSearch('');
+    setModelSearch('');
     setEditingId(null);
   };
 
@@ -116,6 +125,9 @@ export default function VehiclesModule({ profile }) {
       mileage: vehicle.mileage?.toString() || '',
       notes: vehicle.notes || '',
     });
+    setCustomerSearch(vehicle.customers?.name || '');
+    setBrandSearch(vehicle.brand || '');
+    setModelSearch(vehicle.model || '');
     setEditingId(vehicle.id);
     setErrorMessage('');
     setSuccessMessage('');
@@ -215,9 +227,15 @@ export default function VehiclesModule({ profile }) {
           </div>
 
           <Field label="Cliente">
+            <input
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+              placeholder="Digite para buscar o cliente"
+              className="erp-input"
+            />
             <select value={formData.customer_id} onChange={(e) => handleChange('customer_id', e.target.value)} className="erp-input">
               <option value="">Selecione o cliente</option>
-              {customers.map((customer) => (
+              {filteredCustomers.map((customer) => (
                 <option key={customer.id} value={customer.id}>{customer.name}</option>
               ))}
             </select>
@@ -228,22 +246,36 @@ export default function VehiclesModule({ profile }) {
           </Field>
 
           <Field label="Marca">
+            <input
+              value={brandSearch}
+              onChange={(e) => setBrandSearch(e.target.value)}
+              placeholder="Digite para buscar a marca"
+              className="erp-input"
+            />
             <select
               value={formData.brand}
               onChange={(e) => {
                 handleChange('brand', e.target.value);
                 handleChange('model', '');
+                setModelSearch('');
               }}
               className="erp-input"
             >
               <option value="">Selecione a marca</option>
-              {brands.map((brand) => (
+              {filteredBrands.map((brand) => (
                 <option key={brand.id} value={brand.id}>{brand.name}</option>
               ))}
             </select>
           </Field>
 
           <Field label="Modelo">
+            <input
+              value={modelSearch}
+              onChange={(e) => setModelSearch(e.target.value)}
+              placeholder="Digite para buscar o modelo"
+              className="erp-input"
+              disabled={!formData.brand}
+            />
             <select
               value={formData.model}
               onChange={(e) => handleChange('model', e.target.value)}
@@ -251,7 +283,7 @@ export default function VehiclesModule({ profile }) {
               disabled={!formData.brand}
             >
               <option value="">{formData.brand ? 'Selecione o modelo' : 'Escolha a marca primeiro'}</option>
-              {availableModels.map((model) => (
+              {filteredModels.map((model) => (
                 <option key={model.id} value={model.id}>{model.name}</option>
               ))}
             </select>
@@ -376,4 +408,9 @@ function Field({ label, children }) {
       {children}
     </label>
   );
+}
+
+function matchesSearch(value, search) {
+  if (!search.trim()) return true;
+  return (value || '').toLowerCase().includes(search.trim().toLowerCase());
 }
