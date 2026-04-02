@@ -17,6 +17,8 @@ const emptyForm = {
 export default function VehiclesModule({ profile }) {
   const [vehicles, setVehicles] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,12 @@ export default function VehiclesModule({ profile }) {
 
     setErrorMessage('');
 
-    const [{ data: customerRows, error: customerError }, { data: vehicleRows, error: vehicleError }] = await Promise.all([
+    const [
+      { data: customerRows, error: customerError },
+      { data: vehicleRows, error: vehicleError },
+      { data: brandRows, error: brandError },
+      { data: modelRows, error: modelError },
+    ] = await Promise.all([
       supabase
         .from('customers')
         .select('id, name')
@@ -43,16 +50,30 @@ export default function VehiclesModule({ profile }) {
         .select('*, customers(name)')
         .eq('owner_id', profile.id)
         .order('created_at', { ascending: false }),
+      supabase
+        .from('vehicle_brands')
+        .select('id, name')
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true }),
+      supabase
+        .from('vehicle_models')
+        .select('id, brand_id, name')
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true }),
     ]);
 
-    if (customerError || vehicleError) {
-      console.error('Erro ao carregar dados dos veiculos:', customerError || vehicleError);
+    if (customerError || vehicleError || brandError || modelError) {
+      console.error('Erro ao carregar dados dos veiculos:', customerError || vehicleError || brandError || modelError);
       setErrorMessage('Nao foi possivel carregar os veiculos. Verifique se o SQL do modulo foi aplicado no Supabase.');
       setCustomers([]);
       setVehicles([]);
+      setBrands([]);
+      setModels([]);
     } else {
       setCustomers(customerRows || []);
       setVehicles(vehicleRows || []);
+      setBrands(brandRows || []);
+      setModels(modelRows || []);
     }
 
     setLoading(false);
@@ -69,17 +90,24 @@ export default function VehiclesModule({ profile }) {
     }));
   };
 
+  const availableModels = models.filter((item) => item.brand_id === formData.brand);
+  const selectedBrand = brands.find((item) => item.id === formData.brand);
+  const selectedModel = availableModels.find((item) => item.id === formData.model);
+
   const resetForm = () => {
     setFormData(emptyForm);
     setEditingId(null);
   };
 
   const handleEdit = (vehicle) => {
+    const brandMatch = brands.find((item) => item.name === vehicle.brand);
+    const modelMatch = models.find((item) => item.name === vehicle.model && item.brand_id === brandMatch?.id);
+
     setFormData({
       customer_id: vehicle.customer_id || '',
       plate: vehicle.plate || '',
-      brand: vehicle.brand || '',
-      model: vehicle.model || '',
+      brand: brandMatch?.id || '',
+      model: modelMatch?.id || '',
       year: vehicle.year || '',
       color: vehicle.color || '',
       fuel: vehicle.fuel || '',
@@ -99,8 +127,8 @@ export default function VehiclesModule({ profile }) {
       return;
     }
 
-    if (!formData.plate.trim() || !formData.model.trim()) {
-      setErrorMessage('Placa e modelo sao obrigatorios.');
+    if (!formData.plate.trim() || !formData.brand || !formData.model) {
+      setErrorMessage('Placa, marca e modelo sao obrigatorios.');
       return;
     }
 
@@ -112,8 +140,8 @@ export default function VehiclesModule({ profile }) {
       owner_id: profile.id,
       customer_id: formData.customer_id,
       plate: formData.plate.trim().toUpperCase(),
-      brand: formData.brand.trim(),
-      model: formData.model.trim(),
+      brand: selectedBrand?.name || '',
+      model: selectedModel?.name || '',
       year: formData.year.trim(),
       color: formData.color.trim(),
       fuel: formData.fuel.trim(),
@@ -197,11 +225,33 @@ export default function VehiclesModule({ profile }) {
           </Field>
 
           <Field label="Marca">
-            <input value={formData.brand} onChange={(e) => handleChange('brand', e.target.value)} placeholder="Volkswagen, Fiat, Honda..." className="erp-input" />
+            <select
+              value={formData.brand}
+              onChange={(e) => {
+                handleChange('brand', e.target.value);
+                handleChange('model', '');
+              }}
+              className="erp-input"
+            >
+              <option value="">Selecione a marca</option>
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.id}>{brand.name}</option>
+              ))}
+            </select>
           </Field>
 
           <Field label="Modelo">
-            <input value={formData.model} onChange={(e) => handleChange('model', e.target.value)} placeholder="Gol, Uno, Civic..." className="erp-input" />
+            <select
+              value={formData.model}
+              onChange={(e) => handleChange('model', e.target.value)}
+              className="erp-input"
+              disabled={!formData.brand}
+            >
+              <option value="">{formData.brand ? 'Selecione o modelo' : 'Escolha a marca primeiro'}</option>
+              {availableModels.map((model) => (
+                <option key={model.id} value={model.id}>{model.name}</option>
+              ))}
+            </select>
           </Field>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
