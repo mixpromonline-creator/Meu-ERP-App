@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Car, Pencil, Save, Trash2, X } from 'lucide-react';
+import { Car, ChevronDown, Pencil, Save, Trash2, X } from 'lucide-react';
 
 const emptyForm = {
   customer_id: '',
@@ -414,45 +414,148 @@ function SearchableSelect({
   emptyText,
   disabled = false,
 }) {
-  const listId = React.useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  const visibleOptions = useMemo(() => {
+    if (!value.trim()) {
+      return options.slice(0, 12);
+    }
+
+    return options.slice(0, 20);
+  }, [options, value]);
+
+  useEffect(() => {
+    if (disabled) {
+      setIsOpen(false);
+    }
+  }, [disabled]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setIsOpen(false);
+
+        const selectedOption = options.find((option) => option.id === selectedId);
+
+        if (!value.trim()) {
+          onSelect(null);
+          return;
+        }
+
+        if (selectedOption) {
+          onValueChange(selectedOption.name);
+          return;
+        }
+
+        const exactMatch = options.find((option) => option.name.toLowerCase() === value.trim().toLowerCase());
+        if (exactMatch) {
+          onSelect(exactMatch);
+          onValueChange(exactMatch.name);
+        } else {
+          onSelect(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onSelect, onValueChange, options, selectedId, value]);
 
   return (
-    <div style={{ display: 'grid', gap: '0.45rem' }}>
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
       <input
         value={value}
         onChange={(e) => {
           const nextValue = e.target.value;
           onValueChange(nextValue);
+          setIsOpen(true);
 
           const matchedOption = options.find((option) => option.name.toLowerCase() === nextValue.trim().toLowerCase());
           onSelect(matchedOption || null);
         }}
-        onBlur={() => {
-          if (!value.trim()) {
-            onSelect(null);
-            return;
-          }
-
-          const selectedOption = options.find((option) => option.id === selectedId);
-          if (!selectedOption) {
-            onSelect(null);
-            onValueChange('');
-          } else {
-            onValueChange(selectedOption.name);
+        onFocus={() => {
+          if (value.trim()) {
+            setIsOpen(true);
           }
         }}
         placeholder={placeholder}
         className="erp-input"
-        list={listId}
         disabled={disabled}
+        style={{ paddingRight: '2.8rem' }}
       />
-      <datalist id={listId}>
-        {options.map((option) => (
-          <option key={option.id} value={option.name} />
-        ))}
-      </datalist>
-      {value.trim() && options.length === 0 && !disabled && (
-        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-tertiary)' }}>{emptyText}</span>
+      <button
+        type="button"
+        onClick={() => {
+          if (disabled) return;
+          setIsOpen((current) => !current);
+        }}
+        style={{
+          position: 'absolute',
+          top: '50%',
+          right: '0.85rem',
+          transform: 'translateY(-50%)',
+          border: 'none',
+          background: 'transparent',
+          color: 'var(--color-text-secondary)',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          padding: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        disabled={disabled}
+      >
+        <ChevronDown size={16} />
+      </button>
+
+      {isOpen && !disabled && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 0.35rem)',
+            left: 0,
+            right: 0,
+            zIndex: 30,
+            maxHeight: '220px',
+            overflowY: 'auto',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border)',
+            background: 'rgb(25, 26, 30)',
+            boxShadow: '0 12px 28px rgba(0, 0, 0, 0.35)',
+          }}
+        >
+          {visibleOptions.length > 0 ? (
+            visibleOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  onSelect(option);
+                  onValueChange(option.name);
+                  setIsOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.8rem 0.95rem',
+                  border: 'none',
+                  background: option.id === selectedId ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                  color: 'var(--color-text-primary)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.95rem',
+                }}
+              >
+                {option.name}
+              </button>
+            ))
+          ) : (
+            <div style={{ padding: '0.8rem 0.95rem', color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+              {emptyText}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
