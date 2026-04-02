@@ -12,6 +12,7 @@ create table if not exists public.vehicles (
     year text,
     color text,
     fuel text,
+    transmission text,
     mileage integer,
     notes text,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -37,6 +38,9 @@ create table if not exists public.vehicle_models (
 alter table public.vehicles enable row level security;
 alter table public.vehicle_brands enable row level security;
 alter table public.vehicle_models enable row level security;
+
+alter table public.vehicles
+    add column if not exists transmission text;
 
 drop policy if exists "Clientes podem ver os proprios veiculos." on public.vehicles;
 drop policy if exists "Clientes podem inserir os proprios veiculos." on public.vehicles;

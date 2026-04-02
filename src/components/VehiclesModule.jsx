@@ -10,6 +10,7 @@ const emptyForm = {
   year: '',
   color: '',
   fuel: '',
+  transmission: '',
   mileage: '',
   notes: '',
 };
@@ -111,6 +112,7 @@ export default function VehiclesModule({ profile }) {
       year: vehicle.year || '',
       color: vehicle.color || '',
       fuel: vehicle.fuel || '',
+      transmission: vehicle.transmission || '',
       mileage: vehicle.mileage?.toString() || '',
       notes: vehicle.notes || '',
     });
@@ -145,6 +147,7 @@ export default function VehiclesModule({ profile }) {
       year: formData.year.trim(),
       color: formData.color.trim(),
       fuel: formData.fuel.trim(),
+      transmission: formData.transmission.trim(),
       mileage: formData.mileage ? Number(formData.mileage) : null,
       notes: formData.notes.trim(),
       updated_at: new Date().toISOString(),
@@ -254,7 +257,7 @@ export default function VehiclesModule({ profile }) {
             </select>
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
             <Field label="Ano">
               <input value={formData.year} onChange={(e) => handleChange('year', e.target.value)} placeholder="2020" className="erp-input" />
             </Field>
@@ -263,6 +266,15 @@ export default function VehiclesModule({ profile }) {
             </Field>
             <Field label="Combustivel">
               <input value={formData.fuel} onChange={(e) => handleChange('fuel', e.target.value)} placeholder="Flex" className="erp-input" />
+            </Field>
+            <Field label="Cambio">
+              <select value={formData.transmission} onChange={(e) => handleChange('transmission', e.target.value)} className="erp-input">
+                <option value="">Selecione</option>
+                <option value="Manual">Manual</option>
+                <option value="Automatico">Automatico</option>
+                <option value="Automatizado">Automatizado</option>
+                <option value="CVT">CVT</option>
+              </select>
             </Field>
           </div>
 
@@ -339,7 +351,7 @@ export default function VehiclesModule({ profile }) {
                   </div>
 
                   <p style={{ margin: '0.65rem 0 0 0', fontSize: '0.88rem', color: 'var(--color-text-secondary)' }}>
-                    {vehicle.color || 'Cor nao informada'} {vehicle.fuel ? ` - ${vehicle.fuel}` : ''} {vehicle.mileage ? ` - ${vehicle.mileage} km` : ''}
+                    {vehicle.color || 'Cor nao informada'} {vehicle.fuel ? ` - ${vehicle.fuel}` : ''} {vehicle.transmission ? ` - ${vehicle.transmission}` : ''} {vehicle.mileage ? ` - ${vehicle.mileage} km` : ''}
                   </p>
 
                   {vehicle.notes && (
