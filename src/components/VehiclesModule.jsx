@@ -227,18 +227,18 @@ export default function VehiclesModule({ profile }) {
           </div>
 
           <Field label="Cliente">
-            <input
+            <SearchableSelect
               value={customerSearch}
-              onChange={(e) => setCustomerSearch(e.target.value)}
+              onValueChange={(value) => setCustomerSearch(value)}
+              options={filteredCustomers}
+              selectedId={formData.customer_id}
+              onSelect={(option) => {
+                handleChange('customer_id', option?.id || '');
+                setCustomerSearch(option?.name || '');
+              }}
               placeholder="Digite para buscar o cliente"
-              className="erp-input"
+              emptyText="Nenhum cliente encontrado"
             />
-            <select value={formData.customer_id} onChange={(e) => handleChange('customer_id', e.target.value)} className="erp-input">
-              <option value="">Selecione o cliente</option>
-              {filteredCustomers.map((customer) => (
-                <option key={customer.id} value={customer.id}>{customer.name}</option>
-              ))}
-            </select>
           </Field>
 
           <Field label="Placa">
@@ -246,47 +246,36 @@ export default function VehiclesModule({ profile }) {
           </Field>
 
           <Field label="Marca">
-            <input
+            <SearchableSelect
               value={brandSearch}
-              onChange={(e) => setBrandSearch(e.target.value)}
-              placeholder="Digite para buscar a marca"
-              className="erp-input"
-            />
-            <select
-              value={formData.brand}
-              onChange={(e) => {
-                handleChange('brand', e.target.value);
+              onValueChange={(value) => setBrandSearch(value)}
+              options={filteredBrands}
+              selectedId={formData.brand}
+              onSelect={(option) => {
+                handleChange('brand', option?.id || '');
                 handleChange('model', '');
+                setBrandSearch(option?.name || '');
                 setModelSearch('');
               }}
-              className="erp-input"
-            >
-              <option value="">Selecione a marca</option>
-              {filteredBrands.map((brand) => (
-                <option key={brand.id} value={brand.id}>{brand.name}</option>
-              ))}
-            </select>
+              placeholder="Digite para buscar a marca"
+              emptyText="Nenhuma marca encontrada"
+            />
           </Field>
 
           <Field label="Modelo">
-            <input
+            <SearchableSelect
               value={modelSearch}
-              onChange={(e) => setModelSearch(e.target.value)}
-              placeholder="Digite para buscar o modelo"
-              className="erp-input"
+              onValueChange={(value) => setModelSearch(value)}
+              options={filteredModels}
+              selectedId={formData.model}
+              onSelect={(option) => {
+                handleChange('model', option?.id || '');
+                setModelSearch(option?.name || '');
+              }}
+              placeholder={formData.brand ? 'Digite para buscar o modelo' : 'Escolha a marca primeiro'}
+              emptyText="Nenhum modelo encontrado"
               disabled={!formData.brand}
             />
-            <select
-              value={formData.model}
-              onChange={(e) => handleChange('model', e.target.value)}
-              className="erp-input"
-              disabled={!formData.brand}
-            >
-              <option value="">{formData.brand ? 'Selecione o modelo' : 'Escolha a marca primeiro'}</option>
-              {filteredModels.map((model) => (
-                <option key={model.id} value={model.id}>{model.name}</option>
-              ))}
-            </select>
           </Field>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
@@ -413,4 +402,58 @@ function Field({ label, children }) {
 function matchesSearch(value, search) {
   if (!search.trim()) return true;
   return (value || '').toLowerCase().includes(search.trim().toLowerCase());
+}
+
+function SearchableSelect({
+  value,
+  onValueChange,
+  options,
+  selectedId,
+  onSelect,
+  placeholder,
+  emptyText,
+  disabled = false,
+}) {
+  const listId = React.useId();
+
+  return (
+    <div style={{ display: 'grid', gap: '0.45rem' }}>
+      <input
+        value={value}
+        onChange={(e) => {
+          const nextValue = e.target.value;
+          onValueChange(nextValue);
+
+          const matchedOption = options.find((option) => option.name.toLowerCase() === nextValue.trim().toLowerCase());
+          onSelect(matchedOption || null);
+        }}
+        onBlur={() => {
+          if (!value.trim()) {
+            onSelect(null);
+            return;
+          }
+
+          const selectedOption = options.find((option) => option.id === selectedId);
+          if (!selectedOption) {
+            onSelect(null);
+            onValueChange('');
+          } else {
+            onValueChange(selectedOption.name);
+          }
+        }}
+        placeholder={placeholder}
+        className="erp-input"
+        list={listId}
+        disabled={disabled}
+      />
+      <datalist id={listId}>
+        {options.map((option) => (
+          <option key={option.id} value={option.name} />
+        ))}
+      </datalist>
+      {value.trim() && options.length === 0 && !disabled && (
+        <span style={{ fontSize: '0.82rem', color: 'var(--color-text-tertiary)' }}>{emptyText}</span>
+      )}
+    </div>
+  );
 }
